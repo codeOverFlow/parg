@@ -2,8 +2,8 @@ extern crate parg;
 
 use parg::arg::Arg;
 use parg::arg::Type;
-use parg::cli_argument::CliArguments;
-use parg::create_cli_argument;
+use parg::cli_arguments::CliArguments;
+use parg::create_cli_arguments;
 
 fn main() {
     // Create required argument --config
@@ -14,7 +14,7 @@ fn main() {
     let c = Arg::without_value("verbose", false);
 
     // Create the cli
-    let cli: CliArguments = create_cli_argument!(a, b, c);
+    let cli: CliArguments = create_cli_arguments!(a, b, c);
 
     // parse args and get return status
     let return_status = cli.parse();

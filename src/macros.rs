@@ -5,14 +5,14 @@
 /// ```
 /// # #[macro_use] extern crate parg;
 /// # use parg::arg::{Arg, Type};
-/// # use parg::cli_argument::CliArguments;
+/// # use parg::cli_arguments::CliArguments;
 /// # fn main() {
 /// let a = Arg::with_value("config", Type::ReadAsString, true);
 /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
 /// let c = Arg::without_value("verbose", false);
 ///
 /// // Create the cli
-/// let cli: CliArguments = create_cli_argument!(a, b, c);
+/// let cli: CliArguments = create_cli_arguments!(a, b, c);
 /// # }
 /// ```
 ///
@@ -21,7 +21,7 @@
 /// ```
 /// # #[macro_use] extern crate parg;
 /// # use parg::arg::{Arg, Type};
-/// # use parg::cli_argument::CliArguments;
+/// # use parg::cli_arguments::CliArguments;
 /// # use std::collections::BTreeMap;
 /// # fn main() {
 /// let a = Arg::with_value("config", Type::ReadAsString, true);
@@ -38,7 +38,7 @@
 /// # }
 /// ```
 #[macro_export]
-macro_rules! create_cli_argument {
+macro_rules! create_cli_arguments {
     ($($args:expr),+) => {
         {
             use std::collections::BTreeMap;

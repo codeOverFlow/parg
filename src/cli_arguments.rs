@@ -29,7 +29,7 @@ impl CliArguments {
     /// ```
     /// # use parg::arg::{Arg, Type};
     /// # use std::collections::BTreeMap;
-    /// # use parg::cli_argument::CliArguments;
+    /// # use parg::cli_arguments::CliArguments;
     /// let a = Arg::with_value("config", Type::ReadAsString, true);
     /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
     /// let c = Arg::without_value("verbose", false);
@@ -46,14 +46,14 @@ impl CliArguments {
     /// ```
     /// # #[macro_use] extern crate parg;
     /// # use parg::arg::{Arg, Type};
-    /// # use parg::cli_argument::CliArguments;
+    /// # use parg::cli_arguments::CliArguments;
     /// # fn main() {
     /// let a = Arg::with_value("config", Type::ReadAsString, true);
     /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
     /// let c = Arg::without_value("verbose", false);
     ///
     /// // Create the cli
-    /// let cli: CliArguments = create_cli_argument!(a, b, c);
+    /// let cli: CliArguments = create_cli_arguments!(a, b, c);
     /// # }
     /// ```
     pub fn new(named_args: BTreeMap<String, Arg>) -> CliArguments {
@@ -247,14 +247,14 @@ impl CliArguments {
     /// ```
     /// # #[macro_use] extern crate parg;
     /// # use parg::arg::{Arg, Type};
-    /// # use parg::cli_argument::CliArguments;
+    /// # use parg::cli_arguments::CliArguments;
     /// # fn main() {
     /// let a = Arg::with_value("config", Type::ReadAsString, true);
     /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
     /// let c = Arg::without_value("verbose", false);
     ///
     /// // Create the cli
-    /// let cli: CliArguments = create_cli_argument!(a, b, c);
+    /// let cli: CliArguments = create_cli_arguments!(a, b, c);
     ///
     /// // parse args and get return status
     /// let return_status = cli.parse();
@@ -314,14 +314,14 @@ impl CliArguments {
     /// ```
     /// # #[macro_use] extern crate parg;
     /// # use parg::arg::{Arg, Type};
-    /// # use parg::cli_argument::CliArguments;
+    /// # use parg::cli_arguments::CliArguments;
     /// # fn main() {
     /// let a = Arg::with_value("config", Type::ReadAsString, true);
     /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
     /// let c = Arg::without_value("verbose", false);
     ///
     /// // Create the cli
-    /// let cli: CliArguments = create_cli_argument!(a, b, c);
+    /// let cli: CliArguments = create_cli_arguments!(a, b, c);
     ///
     /// // parse args and get return status
     /// let return_status = cli.parse();
@@ -355,14 +355,14 @@ impl CliArguments {
     /// ```
     /// # #[macro_use] extern crate parg;
     /// # use parg::arg::{Arg, Type};
-    /// # use parg::cli_argument::CliArguments;
+    /// # use parg::cli_arguments::CliArguments;
     /// # fn main() {
     /// let a = Arg::with_value("config", Type::ReadAsString, true);
     /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
     /// let c = Arg::without_value("verbose", false);
     ///
     /// // Create the cli
-    /// let cli: CliArguments = create_cli_argument!(a, b, c);
+    /// let cli: CliArguments = create_cli_arguments!(a, b, c);
     ///
     /// // parse args and get return status
     /// let return_status = cli.parse();
