@@ -1,0 +1,14 @@
+[package]
+name = "parg"
+version = "0.1.0"
+authors = ["codeoverflow <adrien.bodineau@gmail.com>"]
+edition = "2018"
+description = "Typesafe command line argument parser for Rust"
+repository = "https://github.com/codeOverFlow/parg"
+keywords = ["parser", "command", "cli", "argument", "command-line"]
+categories = ["command-line-interface"]
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
