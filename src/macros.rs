@@ -1,3 +1,42 @@
+/// Create a `CliArguments` with all `Arg` given to the macro.
+///
+/// # Examples
+///
+/// ```
+/// # #[macro_use] extern crate parg;
+/// # use parg::arg::{Arg, Type};
+/// # use parg::cli_argument::CliArguments;
+/// # fn main() {
+/// let a = Arg::with_value("config", Type::ReadAsString, true);
+/// let b = Arg::with_value("thread", Type::ReadAsU8, false);
+/// let c = Arg::without_value("verbose", false);
+///
+/// // Create the cli
+/// let cli: CliArguments = create_cli_argument!(a, b, c);
+/// # }
+/// ```
+///
+/// This gives a shortcut to.
+///
+/// ```
+/// # #[macro_use] extern crate parg;
+/// # use parg::arg::{Arg, Type};
+/// # use parg::cli_argument::CliArguments;
+/// # use std::collections::BTreeMap;
+/// # fn main() {
+/// let a = Arg::with_value("config", Type::ReadAsString, true);
+/// let b = Arg::with_value("thread", Type::ReadAsU8, false);
+/// let c = Arg::without_value("verbose", false);
+/// let mut tree: BTreeMap<String, Arg> = BTreeMap::new();
+///
+/// tree.insert(a.get_name(), a);
+/// tree.insert(b.get_name(), b);
+/// tree.insert(c.get_name(), c);
+///
+/// // Create the cli
+/// let cli: CliArguments = CliArguments::new(tree);
+/// # }
+/// ```
 #[macro_export]
 macro_rules! create_cli_argument {
     ($($args:expr),+) => {

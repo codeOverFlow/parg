@@ -3,6 +3,7 @@ use std::any::{Any, TypeId};
 use std::collections::BTreeMap;
 use std::fmt;
 
+/// Argument Engine looking for all `Arg`.
 #[derive(Debug)]
 pub struct CliArguments {
     named_args: BTreeMap<String, Arg>,
@@ -18,6 +19,43 @@ impl fmt::Display for CliArguments {
 }
 
 impl CliArguments {
+    ///  Construct a new CliArguments.
+    ///
+    /// # Arguments
+    /// * `named_args` - A `BTreeMap<String, Arg` of the arguments
+    ///
+    /// # Example
+    /// Can be use directly
+    /// ```
+    /// # use parg::arg::{Arg, Type};
+    /// # use std::collections::BTreeMap;
+    /// # use parg::cli_argument::CliArguments;
+    /// let a = Arg::with_value("config", Type::ReadAsString, true);
+    /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
+    /// let c = Arg::without_value("verbose", false);
+    /// let mut tree: BTreeMap<String, Arg> = BTreeMap::new();
+    ///
+    /// tree.insert(a.get_name(), a);
+    /// tree.insert(b.get_name(), b);
+    /// tree.insert(c.get_name(), c);
+    ///
+    /// // Create the cli
+    /// let cli: CliArguments = CliArguments::new(tree);
+    /// ```
+    /// Or using `create_cli_argument!`
+    /// ```
+    /// # #[macro_use] extern crate parg;
+    /// # use parg::arg::{Arg, Type};
+    /// # use parg::cli_argument::CliArguments;
+    /// # fn main() {
+    /// let a = Arg::with_value("config", Type::ReadAsString, true);
+    /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
+    /// let c = Arg::without_value("verbose", false);
+    ///
+    /// // Create the cli
+    /// let cli: CliArguments = create_cli_argument!(a, b, c);
+    /// # }
+    /// ```
     pub fn new(named_args: BTreeMap<String, Arg>) -> CliArguments {
         CliArguments { named_args }
     }
@@ -197,6 +235,47 @@ impl CliArguments {
         }
     }
 
+    ///  Get the value of the `arg_name` argument.
+    ///
+    /// # Arguments
+    /// * `arg_name` - The name of the `Arg` to get the value of.
+    ///
+    /// # Returns
+    /// Return a `Result<T, String>`, T being the requested type and String the error message.
+    ///
+    /// # Example
+    /// ```
+    /// # #[macro_use] extern crate parg;
+    /// # use parg::arg::{Arg, Type};
+    /// # use parg::cli_argument::CliArguments;
+    /// # fn main() {
+    /// let a = Arg::with_value("config", Type::ReadAsString, true);
+    /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
+    /// let c = Arg::without_value("verbose", false);
+    ///
+    /// // Create the cli
+    /// let cli: CliArguments = create_cli_argument!(a, b, c);
+    ///
+    /// // parse args and get return status
+    /// let return_status = cli.parse();
+    /// if let Err(msg) = return_status {
+    ///     eprintln!("{}", msg);
+    ///     return;
+    /// }
+    ///
+    /// // get the value as a String
+    /// let config: String = match cli.get_value("config") {
+    ///     Ok(value) => value,
+    ///     Err(msg) => {
+    ///         eprintln!("{}", msg);
+    ///         return;
+    ///     }
+    /// };
+    /// // if command is ... --config "a config" ...
+    /// // print: config = a config
+    /// println!("config = {}", config);
+    /// # }
+    /// ```
     pub fn get_value<T: 'static + Clone>(&self, arg_name: &str) -> Result<T, String> {
         if let Some(arg) = self.named_args.get(arg_name) {
             if arg.has_value {
@@ -223,6 +302,42 @@ impl CliArguments {
         }
     }
 
+    ///  Check if an `Arg` exists.
+    ///
+    /// # Arguments
+    /// * `arg_name` - The name of the `Arg` to check.
+    ///
+    /// # Returns
+    /// Return `true` if the `Arg` exists, `false` otherwise.
+    ///
+    /// # Example
+    /// ```
+    /// # #[macro_use] extern crate parg;
+    /// # use parg::arg::{Arg, Type};
+    /// # use parg::cli_argument::CliArguments;
+    /// # fn main() {
+    /// let a = Arg::with_value("config", Type::ReadAsString, true);
+    /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
+    /// let c = Arg::without_value("verbose", false);
+    ///
+    /// // Create the cli
+    /// let cli: CliArguments = create_cli_argument!(a, b, c);
+    ///
+    /// // parse args and get return status
+    /// let return_status = cli.parse();
+    /// if let Err(msg) = return_status {
+    ///     eprintln!("{}", msg);
+    ///     return;
+    /// }
+    ///
+    /// // get the value as a String
+    /// let verbose = cli.exists("verbose");
+    ///
+    /// if verbose {
+    ///     // do stuff
+    /// }
+    /// # }
+    /// ```
     pub fn exists(&self, arg_name: &str) -> bool {
         if let Some(arg) = self.named_args.get(arg_name) {
             arg.found.get()
@@ -231,6 +346,32 @@ impl CliArguments {
         }
     }
 
+    ///  Parse the command line arguments.
+    ///
+    /// # Returns
+    /// Return a `Result<(), String>`, String being the error message if any.
+    ///
+    /// # Example
+    /// ```
+    /// # #[macro_use] extern crate parg;
+    /// # use parg::arg::{Arg, Type};
+    /// # use parg::cli_argument::CliArguments;
+    /// # fn main() {
+    /// let a = Arg::with_value("config", Type::ReadAsString, true);
+    /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
+    /// let c = Arg::without_value("verbose", false);
+    ///
+    /// // Create the cli
+    /// let cli: CliArguments = create_cli_argument!(a, b, c);
+    ///
+    /// // parse args and get return status
+    /// let return_status = cli.parse();
+    /// if let Err(msg) = return_status {
+    ///     eprintln!("{}", msg);
+    ///     return;
+    /// }
+    /// # }
+    /// ```
     pub fn parse(&self) -> Result<(), String> {
         self.reset_args();
         let mut last_arg_name = String::new();

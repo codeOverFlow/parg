@@ -2,24 +2,42 @@ use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::fmt;
 
+/// This enum indicates the expected type of the argument value.
 #[derive(Debug)]
 pub enum Type {
+    /// Value is expected to be `u8`.
     ReadAsU8,
+    /// Value is expected to be `u16`.
     ReadAsU16,
+    /// Value is expected to be `u32`.
     ReadAsU32,
+    /// Value is expected to be `u64`.
     ReadAsU64,
+    /// Value is expected to be `u128`.
     ReadAsU128,
+    /// Value is expected to be `usize`.
     ReadAsUsize,
+    /// Value is expected to be `i8`.
     ReadAsI8,
+    /// Value is expected to be `i16`.
     ReadAsI16,
+    /// Value is expected to be `i32`.
     ReadAsI32,
+    /// Value is expected to be `i64`.
     ReadAsI64,
+    /// Value is expected to be `i128`.
     ReadAsI128,
+    /// Value is expected to be `isize`.
     ReadAsIsize,
+    /// Value is expected to be `f32`.
     ReadAsF32,
+    /// Value is expected to be `f64`.
     ReadAsF64,
+    /// Value is expected to be `bool`.
     ReadAsBool,
+    /// Value is expected to be `char`.
     ReadAsChar,
+    /// Value is expected to be `String`.
     ReadAsString,
 }
 
@@ -44,6 +62,8 @@ pub(crate) enum PrivateType {
     ReadAsString(String),
 }
 
+/// This structure represents an Argument for the command line
+/// in the form "--arg_name value".
 pub struct Arg {
     name: String,
     pub(crate) type_read: Option<PrivateType>,
@@ -92,8 +112,21 @@ impl fmt::Display for Arg {
 }
 
 impl Arg {
-    pub fn with_value(name: &str, type_id: Type, required: bool) -> Arg {
-        let arg_type = match type_id {
+    /// Construct an `Arg` expecting a value.
+    ///
+    /// # Arguments
+    /// * `name` - The name of the argument.
+    /// * `reading_type` - The expected `Type` of the argument.
+    /// * `required` - Check if whether or not the argument is required.
+    ///
+    /// # Example
+    /// ```
+    /// # use parg::arg::{Arg, Type};
+    /// // match the optional i32 argument --foo <value>
+    /// let arg = Arg::with_value("foo", Type::ReadAsI32, false);
+    /// ```
+    pub fn with_value(name: &str, reading_type: Type, required: bool) -> Arg {
+        let arg_type = match reading_type {
             Type::ReadAsU8 => PrivateType::ReadAsU8(0),
             Type::ReadAsU16 => PrivateType::ReadAsU16(0),
             Type::ReadAsU32 => PrivateType::ReadAsU32(0),
@@ -123,6 +156,19 @@ impl Arg {
         }
     }
 
+    /// Construct an `Arg` expecting no value.
+    ///
+    /// # Arguments
+    /// * `name` - The name of the argument.
+    /// * `required` - Check if whether or not the argument is required.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use parg::arg::{Arg, Type};
+    /// // match the optional argument --foo
+    /// let arg = Arg::without_value("foo", false);
+    /// ```
     pub fn without_value(name: &str, required: bool) -> Arg {
         Arg {
             name: name.to_string(),
@@ -134,6 +180,15 @@ impl Arg {
         }
     }
 
+    /// Get the name of the `Arg`.
+    ///
+    /// # Example
+    /// ```
+    /// # use parg::arg::{Arg, Type};
+    /// // match the optional i32 argument --foo <value>
+    /// let arg = Arg::with_value("foo", Type::ReadAsI32, false);
+    /// assert_eq!(arg.get_name(), String::from("foo"));
+    /// ```
     pub fn get_name(&self) -> String {
         String::from(&self.name)
     }

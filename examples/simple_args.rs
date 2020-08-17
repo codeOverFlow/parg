@@ -14,7 +14,6 @@ fn main() {
     let c = Arg::without_value("verbose", false);
 
     // Create the cli
-    // equivalent to CliArguments::new(vec![a, b, c])
     let cli: CliArguments = create_cli_argument!(a, b, c);
 
     // parse args and get return status
