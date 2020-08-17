@@ -9,7 +9,7 @@ fn main() {
     // Create required argument --config
     let a = Arg::with_value("config", Type::ReadAsString, true);
     // Create optional argument --thread
-    let b = Arg::with_value("thread", Type::ReadAsU8, false);
+    let b = Arg::with_default_value("thread", Type::ReadAsU8, Box::new(12u8), false);
     // Create optional argument with no value --verbose
     let c = Arg::without_value("verbose", false);
 
@@ -32,7 +32,7 @@ fn main() {
             return;
         }
     };
-    println!("config = {}", config);
+    println!("-> config = {}", config);
 
     // get the value as a u8
     let thread: u8 = match cli.get_value("thread") {
