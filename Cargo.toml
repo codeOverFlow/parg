@@ -6,6 +6,7 @@ edition = "2018"
 description = "Typesafe command line argument parser for Rust"
 repository = "https://github.com/codeOverFlow/parg"
 homepage = "https://github.com/codeOverFlow/parg"
+documentation = "https://codeoverflow.github.io/parg"
 readme = "README.md"
 license = "Open Software License"
 keywords = ["parser", "command", "cli", "argument", "command-line"]

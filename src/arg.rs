@@ -385,7 +385,7 @@ impl Arg {
     /// ```
     /// # use parg::arg::{Arg, Type};
     /// // match the optional i32 argument --foo <value>
-    /// let arg = Arg::with_default_value("foo", Type::ReadAsI32, Box::new(42), false);
+    /// let arg = Arg::with_default_value("foo", Type::ReadAsI32, Box::new(42i32), false);
     /// ```
     pub fn with_default_value(
         name: &str,
