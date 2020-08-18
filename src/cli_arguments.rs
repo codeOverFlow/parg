@@ -1,15 +1,18 @@
-use crate::arg::{Arg, PrivateType};
 use std::any::{Any, TypeId};
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::fmt;
 
+use crate::arg::{Arg, PrivateType};
+
 /// Argument Engine looking for all `Arg`.
-#[derive(Debug)]
-pub struct CliArguments {
-    named_args: BTreeMap<String, Arg>,
+pub struct CliArguments<'a> {
+    app_name: RefCell<String>,
+    description: RefCell<String>,
+    named_args: BTreeMap<String, &'a Arg>,
 }
 
-impl fmt::Display for CliArguments {
+impl fmt::Display for CliArguments<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (_, arg) in self.named_args.iter() {
             writeln!(f, "{}", arg)?;
@@ -18,26 +21,26 @@ impl fmt::Display for CliArguments {
     }
 }
 
-impl CliArguments {
+impl<'a> CliArguments<'a> {
     ///  Construct a new CliArguments.
     ///
     /// # Arguments
-    /// * `named_args` - A `BTreeMap<String, Arg` of the arguments
+    /// * `named_args` - A `BTreeMap<String, &Arg>` of the arguments
     ///
     /// # Example
     /// Can be use directly
     /// ```
-    /// # use parg::arg::{Arg, Type};
+    /// # use parg::{Arg, Type};
     /// # use std::collections::BTreeMap;
-    /// # use parg::cli_arguments::CliArguments;
+    /// # use parg::CliArguments;
     /// let a = Arg::with_value("config", Type::ReadAsString, true);
     /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
     /// let c = Arg::without_value("verbose", false);
-    /// let mut tree: BTreeMap<String, Arg> = BTreeMap::new();
+    /// let mut tree: BTreeMap<String, &Arg> = BTreeMap::new();
     ///
-    /// tree.insert(a.get_name(), a);
-    /// tree.insert(b.get_name(), b);
-    /// tree.insert(c.get_name(), c);
+    /// tree.insert(a.get_name(), &a);
+    /// tree.insert(b.get_name(), &b);
+    /// tree.insert(c.get_name(), &c);
     ///
     /// // Create the cli
     /// let cli: CliArguments = CliArguments::new(tree);
@@ -45,19 +48,23 @@ impl CliArguments {
     /// Or using `create_cli_argument!`
     /// ```
     /// # #[macro_use] extern crate parg;
-    /// # use parg::arg::{Arg, Type};
-    /// # use parg::cli_arguments::CliArguments;
+    /// # use parg::{Arg, Type};
+    /// # use parg::CliArguments;
     /// # fn main() {
     /// let a = Arg::with_value("config", Type::ReadAsString, true);
     /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
     /// let c = Arg::without_value("verbose", false);
     ///
     /// // Create the cli
-    /// let cli: CliArguments = create_cli_arguments!(a, b, c);
+    /// let cli: CliArguments = create_cli_arguments!(&a, &b, &c);
     /// # }
     /// ```
-    pub fn new(named_args: BTreeMap<String, Arg>) -> CliArguments {
-        CliArguments { named_args }
+    pub fn new(named_args: BTreeMap<String, &'a Arg>) -> CliArguments {
+        CliArguments {
+            app_name: RefCell::new(String::new()),
+            description: RefCell::new(String::new()),
+            named_args,
+        }
     }
 
     fn check_args(&self) -> Result<(), String> {
@@ -65,7 +72,11 @@ impl CliArguments {
             if !arg.found.get() {
                 if !arg.has_default_value() {
                     if arg.required {
-                        return Err(format!("Argument --{} is required !", name));
+                        return Err(format!(
+                            "Argument --{} is required !\n{}",
+                            name,
+                            self.generate_usage()
+                        ));
                     }
                 } else {
                     arg.accept_default_value()?;
@@ -75,7 +86,11 @@ impl CliArguments {
             if arg.found.get() && arg.has_value {
                 if arg.value.borrow().is_none() {
                     if !arg.has_default_value() {
-                        return Err(format!("Argument --{} needs a value !", name));
+                        return Err(format!(
+                            "Argument --{} needs a value !\n{}",
+                            name,
+                            self.generate_usage()
+                        ));
                     } else {
                         arg.accept_default_value()?;
                     }
@@ -86,25 +101,26 @@ impl CliArguments {
     }
 
     fn check_type(&self, type_id: TypeId, type_read: &PrivateType) -> bool {
-        match type_read {
-            PrivateType::ReadAsU8(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsU16(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsU32(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsU64(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsU128(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsUsize(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsI8(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsI16(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsI32(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsI64(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsI128(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsIsize(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsF32(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsF64(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsBool(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsChar(sample) => type_id == sample.type_id(),
-            PrivateType::ReadAsString(sample) => type_id == sample.type_id(),
-        }
+        let type_read_type_id = match type_read {
+            PrivateType::ReadAsU8(sample) => sample.type_id(),
+            PrivateType::ReadAsU16(sample) => sample.type_id(),
+            PrivateType::ReadAsU32(sample) => sample.type_id(),
+            PrivateType::ReadAsU64(sample) => sample.type_id(),
+            PrivateType::ReadAsU128(sample) => sample.type_id(),
+            PrivateType::ReadAsUsize(sample) => sample.type_id(),
+            PrivateType::ReadAsI8(sample) => sample.type_id(),
+            PrivateType::ReadAsI16(sample) => sample.type_id(),
+            PrivateType::ReadAsI32(sample) => sample.type_id(),
+            PrivateType::ReadAsI64(sample) => sample.type_id(),
+            PrivateType::ReadAsI128(sample) => sample.type_id(),
+            PrivateType::ReadAsIsize(sample) => sample.type_id(),
+            PrivateType::ReadAsF32(sample) => sample.type_id(),
+            PrivateType::ReadAsF64(sample) => sample.type_id(),
+            PrivateType::ReadAsBool(sample) => sample.type_id(),
+            PrivateType::ReadAsChar(sample) => sample.type_id(),
+            PrivateType::ReadAsString(sample) => sample.type_id(),
+        };
+        type_id == type_read_type_id
     }
 
     ///  Check if an `Arg` exists.
@@ -118,15 +134,15 @@ impl CliArguments {
     /// # Example
     /// ```
     /// # #[macro_use] extern crate parg;
-    /// # use parg::arg::{Arg, Type};
-    /// # use parg::cli_arguments::CliArguments;
+    /// # use parg::{Arg, Type};
+    /// # use parg::CliArguments;
     /// # fn main() {
     /// let a = Arg::with_value("config", Type::ReadAsString, true);
     /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
     /// let c = Arg::without_value("verbose", false);
     ///
     /// // Create the cli
-    /// let cli: CliArguments = create_cli_arguments!(a, b, c);
+    /// let cli: CliArguments = create_cli_arguments!(&a, &b, &c);
     ///
     /// // parse args and get return status
     /// let return_status = cli.parse();
@@ -151,26 +167,50 @@ impl CliArguments {
         }
     }
 
+    /// Generate a text to explain usage
+    pub fn generate_usage(&self) -> String {
+        let mut params = String::new();
+        let mut params_descr = format!("{:23}Print this help\n", "--help");
+        for (name, arg) in self.named_args.iter() {
+            params = format!("{} --{} <value>", params, name);
+            params_descr = format!(
+                "{}--{} {:10}    {} (default: {})\n",
+                params_descr,
+                name,
+                "<value>",
+                arg.description.borrow(),
+                arg.format_default_value()
+            );
+        }
+        format!(
+            "{}\nUsage:\n{}{}\n\nArguments:\n{}",
+            self.description.borrow(),
+            self.app_name.borrow(),
+            params,
+            params_descr
+        )
+    }
+
     ///  Get the value of the `arg_name` argument.
     ///
     /// # Arguments
     /// * `arg_name` - The name of the `Arg` to get the value of.
     ///
     /// # Returns
-    /// Return a `Result<T, String>`, T being the requested type and String the error message.
+    /// Return a `value: T`, T being the requested type.
     ///
     /// # Example
     /// ```
     /// # #[macro_use] extern crate parg;
-    /// # use parg::arg::{Arg, Type};
-    /// # use parg::cli_arguments::CliArguments;
+    /// # use parg::{Arg, Type};
+    /// # use parg::CliArguments;
     /// # fn main() {
     /// let a = Arg::with_value("config", Type::ReadAsString, true);
     /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
     /// let c = Arg::without_value("verbose", false);
     ///
     /// // Create the cli
-    /// let cli: CliArguments = create_cli_arguments!(a, b, c);
+    /// let cli: CliArguments = create_cli_arguments!(&a, &b, &c);
     ///
     /// // parse args and get return status
     /// let return_status = cli.parse();
@@ -180,52 +220,48 @@ impl CliArguments {
     /// }
     ///
     /// // get the value as a String
-    /// let config: String = match cli.get_value("config") {
-    ///     Ok(value) => value,
-    ///     Err(msg) => {
-    ///         eprintln!("{}", msg);
-    ///         return;
-    ///     }
-    /// };
+    /// let config: String = cli.get_value("config");
     /// // if command is ... --config "a config" ...
     /// // print: config = a config
     /// println!("config = {}", config);
     /// # }
     /// ```
-    pub fn get_value<T: 'static + Clone>(&self, arg_name: &str) -> Result<T, String> {
+    pub fn get_value<T: 'static + Clone>(&self, arg_name: &str) -> T {
         if let Some(arg) = self.named_args.get(arg_name) {
             if arg.has_value {
+                // check that types match
                 if let Some(type_read) = &arg.type_read {
                     let is_type_conform = self.check_type(TypeId::of::<T>(), type_read);
-                    if !is_type_conform {
-                        return Err(format!(
+                    let is_option_type_conform =
+                        self.check_type(TypeId::of::<Option<T>>(), type_read);
+                    if !is_type_conform && !is_option_type_conform {
+                        panic!(
                             "The requested type for \"{}\" does not match the reading type !",
                             arg_name
-                        ));
+                        );
                     }
                 }
+
+                // access to the value
                 let borrowed_value = arg.value.borrow();
                 let value = match borrowed_value.as_ref() {
                     Some(v) => v,
                     None => match arg.default_value {
                         Some(ref default) => default,
-                        None => {
-                            return Err(format!(
-                                "\"{}\" has no value nor default value !",
-                                arg_name
-                            ))
-                        }
+                        None => panic!("\"{}\" has no value nor default value !", arg_name),
                     },
                 };
+
+                // cast then return Some(value) or panic
                 match value.downcast_ref::<T>() {
-                    Some(v) => Ok(v.clone()),
-                    None => Err(format!("Error downcasting argument {}", arg_name)),
+                    Some(v) => v.clone(),
+                    None => panic!("Error downcasting argument {}", arg_name),
                 }
             } else {
-                Err(format!("Argument {} does not take a value !", arg_name))
+                panic!("Argument {} does not take a value !", arg_name);
             }
         } else {
-            Err(format!("Argument {} does not exists !", arg_name))
+            panic!("Argument \"{}\" does not exists !", arg_name)
         }
     }
 
@@ -237,15 +273,15 @@ impl CliArguments {
     /// # Example
     /// ```
     /// # #[macro_use] extern crate parg;
-    /// # use parg::arg::{Arg, Type};
-    /// # use parg::cli_arguments::CliArguments;
+    /// # use parg::{Arg, Type};
+    /// # use parg::CliArguments;
     /// # fn main() {
     /// let a = Arg::with_value("config", Type::ReadAsString, true);
     /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
     /// let c = Arg::without_value("verbose", false);
     ///
     /// // Create the cli
-    /// let cli: CliArguments = create_cli_arguments!(a, b, c);
+    /// let cli: CliArguments = create_cli_arguments!(&a, &b, &c);
     ///
     /// // parse args and get return status
     /// let return_status = cli.parse();
@@ -266,6 +302,10 @@ impl CliArguments {
             }
 
             if arg.starts_with("--") && arg.chars().count() >= 3 {
+                if arg.eq_ignore_ascii_case("--help") {
+                    println!("{}", self.generate_usage());
+                    return Err(String::new());
+                }
                 last_arg_name = String::from(&arg[2..]);
                 if let Some(argument) = self.named_args.get(&last_arg_name) {
                     read_value = true;
@@ -413,5 +453,32 @@ impl CliArguments {
             arg.value.replace(None);
             arg.found.set(false);
         }
+    }
+
+    ///  Sets the cli name and description.
+    ///
+    /// # Arguments
+    /// * `app_name` - The name of the cli app.
+    /// * `description` - The description of the cli app.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[macro_use] extern crate parg;
+    /// # use parg::{Arg, Type};
+    /// # use parg::CliArguments;
+    /// # fn main() {
+    /// let a = Arg::with_value("config", Type::ReadAsString, true);
+    /// let b = Arg::with_value("thread", Type::ReadAsU8, false);
+    /// let c = Arg::without_value("verbose", false);
+    ///
+    /// // Create the cli
+    /// let cli: CliArguments = create_cli_arguments!(&a, &b, &c);
+    /// cli.set_info("my_app", "The app description");
+    /// # }
+    /// ```
+    pub fn set_info(&self, app_name: &str, description: &str) {
+        self.app_name.replace(String::from(app_name));
+        self.description.replace(String::from(description));
     }
 }

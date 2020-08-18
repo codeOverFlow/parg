@@ -90,6 +90,7 @@ impl From<Type> for PrivateType {
 /// in the form "--arg_name value".
 pub struct Arg {
     name: String,
+    pub(crate) description: RefCell<String>,
     pub(crate) type_read: Option<PrivateType>,
     pub(crate) required: bool,
     pub(crate) has_value: bool,
@@ -98,38 +99,25 @@ pub struct Arg {
     pub(crate) default_value: Option<Box<dyn Any>>,
 }
 
-impl fmt::Debug for Arg {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let borrowed_value = self.value.borrow();
-        let value: String;
-        if borrowed_value.is_some() {
-            value = format!("{:?}", self.format_value());
-        } else {
-            value = String::from("None");
-        }
-        write!(f,
-                "Arg (name: {:?}, type_read: {:?}, required: {:?}, has_value: {:?}, value: {:?}, found: {:?})",
-                self.name,
-                self.type_read,
-                self.required,
-                self.has_value,
-                value,
-                self.found
-        )
-    }
-}
-
 impl fmt::Display for Arg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let borrowed_value = self.value.borrow();
-        let value: String;
-        if borrowed_value.is_some() {
-            value = format!("{}", self.format_value());
-        } else {
-            value = String::from("None");
-        }
         if self.has_value {
-            write!(f, "--{}={}", self.name, value)
+            // format value as String
+            let borrowed_value = self.value.borrow();
+            let value: String;
+            if borrowed_value.is_some() {
+                value = format!("{}", self.format_value());
+            } else {
+                value = String::from("None");
+            }
+
+            if self.has_default_value() {
+                // format default value as String
+                let default_value = format!("{:?}", self.format_default_value());
+                write!(f, "--{}={} (default: {})", self.name, value, default_value)
+            } else {
+                write!(f, "--{}={}", self.name, value)
+            }
         } else {
             write!(f, "--{}", self.name)
         }
@@ -138,9 +126,10 @@ impl fmt::Display for Arg {
 
 impl Arg {
     pub(crate) fn accept_default_value(&self) -> Result<(), String> {
-        println!("Accept default value for {}", self.name);
-        let default_value = self.default_value.as_ref().unwrap();
-        println!("{:?}", default_value);
+        let default_value = match self.default_value.as_ref() {
+            Some(default) => default,
+            None => return Err(format!("No default value found for {}!", self.name)),
+        };
         let value: Box<dyn Any> = match self.type_read {
             Some(PrivateType::ReadAsU8(_)) => {
                 let tmp = default_value.downcast_ref::<u8>();
@@ -268,6 +257,80 @@ impl Arg {
         Ok(())
     }
 
+    fn any_to_string(&self, value: &Box<dyn Any>) -> String {
+        match self.type_read {
+            Some(PrivateType::ReadAsU8(_)) => match value.downcast_ref::<u8>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsU16(_)) => match value.downcast_ref::<u16>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsU32(_)) => match value.downcast_ref::<u32>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsU64(_)) => match value.downcast_ref::<u64>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsU128(_)) => match value.downcast_ref::<u128>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsUsize(_)) => match value.downcast_ref::<usize>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsI8(_)) => match value.downcast_ref::<i8>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsI16(_)) => match value.downcast_ref::<i16>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsI32(_)) => match value.downcast_ref::<i32>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsI64(_)) => match value.downcast_ref::<i64>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsI128(_)) => match value.downcast_ref::<i128>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsIsize(_)) => match value.downcast_ref::<isize>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsF32(_)) => match value.downcast_ref::<f32>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsF64(_)) => match value.downcast_ref::<f64>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsBool(_)) => match value.downcast_ref::<bool>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsChar(_)) => match value.downcast_ref::<char>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            Some(PrivateType::ReadAsString(_)) => match value.downcast_ref::<String>() {
+                Some(v) => format!("{:?}", v),
+                None => String::from("None"),
+            },
+            None => String::new(),
+        }
+    }
+
     pub(crate) fn format_value(&self) -> String {
         if self.has_value {
             let borrowed_value = self.value.borrow();
@@ -277,80 +340,20 @@ impl Arg {
                     "Error unwrapping value for argument {}",
                     self.name
                 ));
-                match self.type_read {
-                    Some(PrivateType::ReadAsU8(_)) => match value.downcast_ref::<u8>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsU16(_)) => match value.downcast_ref::<u16>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsU32(_)) => match value.downcast_ref::<u32>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsU64(_)) => match value.downcast_ref::<u64>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsU128(_)) => match value.downcast_ref::<u128>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsUsize(_)) => match value.downcast_ref::<usize>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsI8(_)) => match value.downcast_ref::<i8>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsI16(_)) => match value.downcast_ref::<i16>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsI32(_)) => match value.downcast_ref::<i32>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsI64(_)) => match value.downcast_ref::<i64>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsI128(_)) => match value.downcast_ref::<i128>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsIsize(_)) => match value.downcast_ref::<isize>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsF32(_)) => match value.downcast_ref::<f32>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsF64(_)) => match value.downcast_ref::<f64>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsBool(_)) => match value.downcast_ref::<bool>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsChar(_)) => match value.downcast_ref::<char>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    Some(PrivateType::ReadAsString(_)) => match value.downcast_ref::<String>() {
-                        Some(v) => format!("{:?}", v),
-                        None => String::from("None"),
-                    },
-                    None => String::new(),
-                }
+                self.any_to_string(value)
             } else {
                 String::new()
             }
+        } else {
+            String::new()
+        }
+    }
+
+    pub(crate) fn format_default_value(&self) -> String {
+        if self.has_default_value() {
+            let borrowed_value = self.default_value.as_ref().unwrap();
+            let value = borrowed_value;
+            self.any_to_string(value)
         } else {
             String::new()
         }
@@ -360,7 +363,7 @@ impl Arg {
     ///
     /// # Example
     /// ```
-    /// # use parg::arg::{Arg, Type};
+    /// # use parg::{Arg, Type};
     /// // match the optional i32 argument --foo <value>
     /// let arg = Arg::with_value("foo", Type::ReadAsI32, false);
     /// assert_eq!(arg.get_name(), String::from("foo"));
@@ -373,6 +376,24 @@ impl Arg {
         self.default_value.is_some()
     }
 
+    ///  Sets the `Arg` description.
+    ///
+    /// # Arguments
+    /// * `description` - The description of the argument.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use parg::{Arg, Type};
+    /// # fn main() {
+    /// let a = Arg::with_value("config", Type::ReadAsString, true);
+    /// a.set_description("The argument description");
+    /// # }
+    /// ```
+    pub fn set_description(&self, description: &str) {
+        self.description.replace(String::from(description));
+    }
+
     /// Construct an `Arg` expecting a value and having a default one.
     ///
     /// # Arguments
@@ -383,7 +404,7 @@ impl Arg {
     ///
     /// # Example
     /// ```
-    /// # use parg::arg::{Arg, Type};
+    /// # use parg::{Arg, Type};
     /// // match the optional i32 argument --foo <value>
     /// let arg = Arg::with_default_value("foo", Type::ReadAsI32, Box::new(42i32), false);
     /// ```
@@ -395,6 +416,7 @@ impl Arg {
     ) -> Arg {
         Arg {
             name: name.to_string(),
+            description: RefCell::new(String::new()),
             type_read: Some(PrivateType::from(reading_type)),
             required,
             has_value: true,
@@ -413,13 +435,14 @@ impl Arg {
     ///
     /// # Example
     /// ```
-    /// # use parg::arg::{Arg, Type};
+    /// # use parg::{Arg, Type};
     /// // match the optional i32 argument --foo <value>
     /// let arg = Arg::with_value("foo", Type::ReadAsI32, false);
     /// ```
     pub fn with_value(name: &str, reading_type: Type, required: bool) -> Arg {
         Arg {
             name: name.to_string(),
+            description: RefCell::new(String::new()),
             type_read: Some(PrivateType::from(reading_type)),
             required,
             has_value: true,
@@ -438,13 +461,14 @@ impl Arg {
     /// # Example
     ///
     /// ```
-    /// # use parg::arg::{Arg, Type};
+    /// # use parg::{Arg, Type};
     /// // match the optional argument --foo
     /// let arg = Arg::without_value("foo", false);
     /// ```
     pub fn without_value(name: &str, required: bool) -> Arg {
         Arg {
             name: name.to_string(),
+            description: RefCell::new(String::new()),
             type_read: None,
             required,
             has_value: false,
