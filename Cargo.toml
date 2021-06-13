@@ -1,6 +1,6 @@
 [package]
 name = "parg"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["codeoverflow <adrien.bodineau@gmail.com>"]
 edition = "2018"
 description = "Typesafe command line argument parser for Rust"

@@ -2,6 +2,7 @@ use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::fmt;
+use core::iter::Iterator;
 
 use crate::arg::{Arg, PrivateType};
 
@@ -292,10 +293,24 @@ impl<'a> CliArguments<'a> {
     /// # }
     /// ```
     pub fn parse(&self) -> Result<(), String> {
+        self.internal_parse(std::env::args().skip(1))
+    }
+
+    pub fn parse_subset<T>(&self, args: T) -> Result<(), String>
+        where
+            T: Iterator<Item = String>
+    {
+        self.internal_parse(args)
+    }
+
+    fn internal_parse<T>(&self, args: T) -> Result<(), String>
+        where
+            T: Iterator<Item = String>
+    {
         self.reset_args();
         let mut last_arg_name = String::new();
         let mut read_value = false;
-        for arg in std::env::args().skip(1) {
+        for arg in args {
             if read_value {
                 read_value = false;
                 self.read_value(String::from(&arg), String::from(&last_arg_name))?;
